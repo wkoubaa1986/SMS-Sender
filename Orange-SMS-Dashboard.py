@@ -410,7 +410,8 @@ if check_password():
     # =============================================================================
     #         # Use google drive Data base:
     # =============================================================================    
-    Cred_path=os.getcwd().split('\\')[0]+'/credentials/'
+    #Cred_path=os.getcwd().split('\\')[0]+'/credentials/'
+    Cred_path='./credentials/'
     try: 
         os.mkdir(Cred_path) 
     except: 
