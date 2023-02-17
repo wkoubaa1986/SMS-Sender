@@ -434,7 +434,7 @@ if check_password():
         flow = client.flow_from_clientsecrets(client_secret_path, SCOPE)
         credentials = tools.run_flow(flow, store)
     
-    os.remove(client_secret_path)
+    #os.remove(client_secret_path)
     
     http = credentials.authorize(Http())
     drive = discovery.build('drive', 'v3', http=http)
