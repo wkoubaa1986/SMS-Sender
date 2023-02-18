@@ -20,7 +20,8 @@ import plotly.express as px
 from apiclient import discovery
 from httplib2 import Http
 from oauth2client import client, file, tools
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload  
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload 
+from google.oauth2 import service_account 
 from io import BytesIO, StringIO
 
 
@@ -147,11 +148,12 @@ def delete_file(api_service, file_id):
 # =============================================================================
 #     end
 # =============================================================================
-@st.cache(allow_output_mutation=True)
-def load_data(drive):
+#@st.cache(allow_output_mutation=True)
+def load_data(drive,folder_id):
     Type_Folder='application/vnd.google-apps.folder'
     Type_csv='text/csv'
-    [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+    #[folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+    
     [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
     [File_exist,File_id]=search_file(drive,'WixData.csv',DataBase_id,Type_csv)
     [FStatus,file]=Download_File(drive,File_id)
@@ -159,22 +161,27 @@ def load_data(drive):
     #WixData=pd.read_csv('.\DataBase\WixData.csv')
     return WixData
 
+#
+#@st.cache()
 @st.cache(allow_output_mutation=True)
-def load_data_Small(drive):
-    folder_name='Orange-SMS'
-    Type_Folder='application/vnd.google-apps.folder'
-    Type_csv='text/csv'
-    [folder_exist,folder_id]=search_file(drive,folder_name,None,Type_Folder)
-    [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
-    [File_exist,File_id]=search_file(drive,'WixDataSmall.csv',DataBase_id,Type_csv)
-    [FStatus,file]=Download_File(drive,File_id)
-    WixDataSmall=pd.read_csv(file)
-    #WixDataSmall=pd.read_csv('.\DataBase\WixDataSmall.csv')
-    return WixDataSmall
+def load_data_Small():
+    # folder_name='Orange-SMS'
+    # Type_Folder='application/vnd.google-apps.folder'
+    # Type_csv='text/csv'
+    # # [folder_exist,folder_id]=search_file(drive,folder_name,None,Type_Folder)
+    # #folder_id=st.secrets['Orange_SMS_ID']['folderID']
+    # [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
+    # [File_exist,File_id]=search_file(drive,'WixDataSmall.csv',DataBase_id,Type_csv)
+    # [FStatus,file]=Download_File(drive,File_id)
+    # WixDataSmall=pd.read_csv(file)
+    # #WixDataSmall=pd.read_csv('.\DataBase\WixDataSmall.csv')
+    
+    return st.session_state.WixData
 
 #@st.cache(allow_output_mutation=True)
-def load_summary(drive):
-    [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+def load_summary(drive,folder_id):
+    # [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+    #folder_id=st.secrets['Orange_SMS_ID']['folderID']
     [History_exist,History_id]=search_file(drive,'History_Compaign',folder_id,Type_Folder)
     [File_exist,File_id]=search_file(drive,'Summary_compaign.csv',History_id,Type_csv)
     if File_exist:
@@ -403,44 +410,19 @@ if check_password():
 # =============================================================================
 #     Orange-SMS-Tunisia API
 # =============================================================================
-    SENDER_NAME = 'SMS marketing'
+    SENDER_NAME = 'Aqua World'
     AUTH_TOKEN =st.secrets["AUTH_TOKEN"]
     Type_Folder='application/vnd.google-apps.folder'
     Type_csv='text/csv'
     # =============================================================================
     #         # Use google drive Data base:
     # =============================================================================    
-    #Cred_path=os.getcwd().split('\\')[0]+'/credentials/'
-    Cred_path='./credentials/'
-    try: 
-        os.mkdir(Cred_path) 
-    except: 
-        pass
-    client_secret_path=Cred_path+'client_secret.json'
-    credentials_path=Cred_path+'credentials.json'
-    client_secret={"web":st.secrets["GOOGLE_DRIVE_TOKEN"]}
-    
-    with open(client_secret_path, 'w') as fp:
-        json.dump(client_secret, fp)
-    
     
     # define API scope
     SCOPE = 'https://www.googleapis.com/auth/drive'
-    
-    store = file.Storage(credentials_path)
-    credentials = store.get()
-    # get access token
-    if not credentials or credentials.invalid:
-        flow = client.flow_from_clientsecrets(client_secret_path, SCOPE)
-        credentials = tools.run_flow(flow, store)
-    
-    #os.remove(client_secret_path)
-    
-    http = credentials.authorize(Http())
-    drive = discovery.build('drive', 'v3', http=http)
-    
-    
-    
+    credentials = service_account.Credentials.from_service_account_info(st.secrets['GOOGLE_DRIVE_TOKEN'],scopes=[SCOPE])
+    drive = discovery.build('drive', 'v3', credentials=credentials)
+    folder_id=st.secrets['Orange_SMS_ID']['folderID']
     # =============================================================================
     # Dashbord 
     # =============================================================================
@@ -481,20 +463,25 @@ if check_password():
             if "Loaded" not in st.session_state:
                 
                 st.session_state.Loaded = False
+                st.session_state.WixData =[]
+            
             if st.session_state.Loaded:
-                WixDataSmall=load_data_Small(drive)
+                
+                #WixDataSmall=load_data_Small(drive,folder_id)
+                WixDataSmall=load_data_Small()
                 Wixlabel= liste_label(WixDataSmall)
                 st.session_state.Loaded=True
             
             else:
-                WixData=load_data(drive)
+                WixData=load_data(drive,folder_id)
                 WixDataSmall=post_process_DataBase(WixData)
-                [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+                # [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
                 [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
                 [File_exist,File_id]=search_file(drive,'WixDataSmall.csv',DataBase_id,Type_csv)
                 if File_exist:
                     delete_file(drive, File_id)
                 FStatus=Upload_DataFrame(drive,WixDataSmall,DataBase_id,'WixDataSmall.csv')
+                st.session_state.WixData=WixDataSmall
                 Wixlabel= liste_label(WixDataSmall)
                 st.session_state.Loaded=True
             # 
@@ -695,7 +682,8 @@ if check_password():
                 
                 File_name=title+' - '+StartCompagne+'.csv'
                 
-                [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+                # [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+                folder_id=st.secrets['Orange_SMS_ID']['folderID']
                 [History_exist,History_id]=search_file(drive,'History_Compaign',folder_id,Type_Folder)
                 [File_exist,File_id]=search_file(drive,File_name,History_id,Type_csv)
                 if File_exist:
@@ -832,7 +820,8 @@ if check_password():
                 df['Phone 1']=df['Phone 1'].apply(str)
                 File_name=title+' - '+StartCompagne+'.csv'
                 
-                [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+                # [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+                folder_id=st.secrets['Orange_SMS_ID']['folderID']
                 [History_exist,History_id]=search_file(drive,'History_Compaign',folder_id,Type_Folder)
                 [File_exist,File_id]=search_file(drive,File_name,History_id,Type_csv)
                 if File_exist:
@@ -864,7 +853,7 @@ if check_password():
     if selected=="Compagnes":
         st.title('_Historique des compagnes SMS_')
         st.header("_Liste des compagnes envoyées_")
-        Summary_Compagne=load_summary(drive)
+        Summary_Compagne=load_summary(drive,folder_id)
         gb = GridOptionsBuilder.from_dataframe(Summary_Compagne)
         gb.configure_column("Nom compagne", headerCheckboxSelection =False)
         gb.configure_selection(selection_mode="single", use_checkbox=True)
@@ -896,7 +885,8 @@ if check_password():
                 File_name=response["selected_rows"][0]["Nom compagne"] +' - '+response["selected_rows"][0]["Date creation"]+'.csv'
     
                 
-            [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+            # [folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+            folder_id=st.secrets['Orange_SMS_ID']['folderID']
             [History_exist,History_id]=search_file(drive,'History_Compaign',folder_id,Type_Folder)
             [File_exist,File_id]=search_file(drive,File_name,History_id,Type_csv)
             if File_exist:

@@ -1,3 +1,4 @@
 .streamlit/
 __pycache__/
-
+credentials/
+load_csv.py
