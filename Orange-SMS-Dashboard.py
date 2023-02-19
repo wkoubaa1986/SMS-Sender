@@ -161,22 +161,28 @@ def load_data(drive,folder_id):
     #WixData=pd.read_csv('.\DataBase\WixData.csv')
     return WixData
 
+def load_reservation(drive,folder_id):
+    Type_Folder='application/vnd.google-apps.folder'
+    Type_csv='text/csv'
+    #[folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+    
+    [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
+    [File_exist,File_id]=search_file(drive,'liste_des_réservations.csv',DataBase_id,Type_csv)
+    if File_exist:
+        [FStatus,file]=Download_File(drive,File_id)
+        Reservation=pd.read_csv(file)
+        Reservation['Numéro de téléphone du client']=Reservation['Numéro de téléphone du client'].apply(lambda x:process_number(x,0))
+
+    else:
+        Reservation=[]
+    return Reservation
+
 #
 #@st.cache()
 @st.cache(allow_output_mutation=True)
 def load_data_Small():
-    # folder_name='Orange-SMS'
-    # Type_Folder='application/vnd.google-apps.folder'
-    # Type_csv='text/csv'
-    # # [folder_exist,folder_id]=search_file(drive,folder_name,None,Type_Folder)
-    # #folder_id=st.secrets['Orange_SMS_ID']['folderID']
-    # [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
-    # [File_exist,File_id]=search_file(drive,'WixDataSmall.csv',DataBase_id,Type_csv)
-    # [FStatus,file]=Download_File(drive,File_id)
-    # WixDataSmall=pd.read_csv(file)
-    # #WixDataSmall=pd.read_csv('.\DataBase\WixDataSmall.csv')
     
-    return st.session_state.WixData
+    return [st.session_state.WixData,st.session_state.Reservation]
 
 #@st.cache(allow_output_mutation=True)
 def load_summary(drive,folder_id):
@@ -191,6 +197,21 @@ def load_summary(drive,folder_id):
         Summary=pd.DataFrame()
     #Summary=pd.read_csv('.\History_Compaign\Summary_compaign.csv')
     return Summary
+
+def load_liste(drive,folder_id):
+    Type_Folder='application/vnd.google-apps.folder'
+    Type_csv='text/csv'
+    liste=pd.DataFrame()
+    #[folder_exist,folder_id]=search_file(drive,'Orange-SMS',None,Type_Folder)
+    
+    [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
+    [File_exist,File_id]=search_file(drive,'Liste_a_appeler.csv',DataBase_id,Type_csv)
+    
+    if File_exist:
+        [FStatus,file]=Download_File(drive,File_id)
+        liste=pd.read_csv(file)
+    #WixData=pd.read_csv('.\DataBase\WixData.csv')
+    return liste
 @st.cache
 def liste_label(WixData):
     label=WixData.Labels[WixData.Labels.notnull()].unique()
@@ -225,9 +246,59 @@ def unique(list1):
         if x not in unique_list:
             unique_list.append(x)
     return unique_list
+@st.cache
+def find_client_reserved(WixData,Reservation):
+    Client=WixData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+    tel1=WixData['Phone 1'].apply(str)
+    tel1=tel1.apply(lambda x: x.replace(' ',''))
+    telres=Reservation['Numéro de téléphone du client'].apply(str)
+    indx_Wix=list()
+    Client_NotFound=list()
+    for icus in range(0,len(Reservation['Nom du client'])):
+        if Reservation['Nom du service'][icus]=='Entretien osmoseur domestique':
+            name_i=Reservation['Nom du client'][icus]
+            name_list=name_i.split(' ')
+            name_u=[]
+            for iname in name_list:
+                if iname not in name_u:
+                    name_u.append(iname)
+            name_i=' '.join(name_u)
+            indx=Client.str.contains(name_i)
+            indx=indx[indx==True]
+            if len(indx.index.tolist())==0:
+                teli=telres[icus].replace(' ','')
+                indx1=tel1[tel1==teli]
+                if len(indx1.index.tolist())==0:
+                    if ('-' in teli):
+                        teli=teli.split('-')
+                    elif ('*' in teli):
+                        teli=teli.split('*')
+                    elif  ('/' in teli):
+                        teli=teli.split('/')
+                    else:
+                        teli=[teli]
+                    for itel in range(0,len(teli)):
+                        telii=teli[itel].replace(' ','')
+                        telii=telii[-8:]
+                        indx1=tel1.str.contains(telii)
+                        indx1=indx1[indx1==True]
+                        if len(indx1.index.tolist())>0:
+                            break
+                if len(indx1.index.tolist())!=0:
+                    indx_Wix.append(indx1.index.tolist()[0])
+                else:
+                    Client_NotFound.append(Reservation['Nom du client'][icus])
+                    
+                    
+    
+    
+            else:
+                indx_Wix.append(indx.index.tolist()[0])
+    
+    return [indx_Wix,Client_NotFound]
 
 @st.cache
-def select_rows_entretien(df,mois):
+def select_rows_entretien(df,mois,indx_Wix):
     dayE = date.today()+ relativedelta(months=-mois)
     dayE =dayE.strftime('%Y-%m-%d')
     #Date entretien n'hexiste pas / voyant date installation
@@ -245,10 +316,47 @@ def select_rows_entretien(df,mois):
     condition6=df.index[df['Labels'].str.contains("Installation") ==True ].tolist()
     condition7=df.index[df['Labels'].str.contains("Entretien")==True].tolist()
     condition8=df.index[df['Labels'].str.contains("Réparation osmoseur domestique")==True].tolist()
-    condition3=list(set(condition3) & set(condition4) & set(condition5) & set(condition5) & set(condition7) & set(condition8))
-    return unique(condition1+condition2+condition3)
+    condition3=list(set(condition3) & set(condition4) & set(condition5) & set(condition5) & set(condition6) & set(condition7) & set(condition8))
+    condition=unique(condition1+condition2+condition3)
+    condition=list(set(condition)-set(indx_Wix))
+    return condition
+def create_list(SelectedData,Ancienne_Liste):
+    if 'First Name' in list(Ancienne_Liste.columns):
+        Client=list(Ancienne_Liste[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1))
+        SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
+        SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+        SelectedData['Exist']=SelectedData['Client'].apply(lambda x: x in Client)
+        SelectedData=SelectedData[SelectedData['Exist']==False]
+    else:
+        SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
+        SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+        
+    if not(SelectedData.empty):
+        N_old=30
+        N_new=20
+        if len(SelectedData['Client'])>=50:
+            Liste_old=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][0:N_old]
+            Liste_new=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][-N_new:]
+            Liste=pd.concat([Liste_old,Liste_new])
+        elif len(SelectedData['Client'])>30:
+            N_new=len(SelectedData['Client'])-N_old
+            Liste_old=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][0:N_old]
+            Liste_new=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][-N_new:]
+            Liste=pd.concat([Liste_old,Liste_new])    
+        else:
+            Liste=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']]
+    else:
+        Liste=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']]
+    return Liste
 
-@st.cache 
+
+        
+        
+        
+        
+    
+    
+
 def process_number(Number,indx):
     if pd.isnull(Number):
         Number=''
@@ -320,7 +428,7 @@ def find_dupicated(df):
 
 @st.cache
 def Get_Phone_Summary(df):
-    prefix=('2167','2163')
+    prefix=('2167','2163','nan')
     tel1=df['Phone 1'][df['Phone 1'].notnull()]
     tel1=tel1.astype(str)
     tel1=tel1.apply(lambda x: x[0:11] if pd.notnull(x) else x)
@@ -464,11 +572,12 @@ if check_password():
                 
                 st.session_state.Loaded = False
                 st.session_state.WixData =[]
+                st.session_state.Reservation =[]
             
             if st.session_state.Loaded:
                 
                 #WixDataSmall=load_data_Small(drive,folder_id)
-                WixDataSmall=load_data_Small()
+                [WixDataSmall,Reservation]=load_data_Small()
                 Wixlabel= liste_label(WixDataSmall)
                 st.session_state.Loaded=True
             
@@ -483,6 +592,9 @@ if check_password():
                 FStatus=Upload_DataFrame(drive,WixDataSmall,DataBase_id,'WixDataSmall.csv')
                 st.session_state.WixData=WixDataSmall
                 Wixlabel= liste_label(WixDataSmall)
+                Reservation=load_reservation(drive,folder_id)
+    
+                st.session_state.Reservation=Reservation
                 st.session_state.Loaded=True
             # 
             if "disabled" not in st.session_state:
@@ -539,7 +651,12 @@ if check_password():
             if  st.session_state.disabled:
                 indx_selection=select_rows_label(WixDataSmall,option)
             elif st.session_state.disabled_E:
-                indx_selection=select_rows_entretien(WixDataSmall,int(option2[3:5]))
+                indx_Wix=[];
+                if isinstance(Reservation, pd.DataFrame):
+                    [indx_Wix,Client_NotFound]=find_client_reserved(WixDataSmall,Reservation)
+                if len(indx_Wix)>0:
+                    col1.write('Il y a deja : '+str(len(indx_Wix))+' entretiens programés')
+                indx_selection=select_rows_entretien(WixDataSmall,int(option2[3:5]),indx_Wix)
             else:
                 indx_selection=[]
             
@@ -569,11 +686,10 @@ if check_password():
             tel1=0
             tel2=0
             tel2_i=[]
-    
+            #st.write(response["selected_rows"])
             if Nb_selection>0:
                 [tel1,tel2,tel2_i]=Get_Phone_Summary(SelectedData)
                 
-            
             st.header("Sommaire Compagne:: _"+title+"_ :")
             if "disable_B" not in st.session_state:
                 st.session_state.disable_B = False
@@ -594,10 +710,24 @@ if check_password():
             col2.metric("Nb SMS Phone 1:",tel1 , None)
             col3.metric("Nb SMS Phone 2:",tel2 , None)
             B=False
+            T=False
             with col1:
                 st.write(message)
     
                 B=st.button('Envoyer la compagne',disabled=not(st.session_state.disable_B))
+                if st.session_state.Selection =="Sélection pour entretien":
+                    T=st.button("Gener liste d'appel pour entretien")
+                    if T:#upload ancienne liste
+                        Ancienne_Liste=load_liste(drive,folder_id)
+                        Liste_a_appeler=create_list(SelectedData,Ancienne_Liste)
+                        [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
+                        [File_exist,File_id]=search_file(drive,'Liste_a_appeler.csv',DataBase_id,Type_csv)
+                        
+                        if File_exist:
+                            delete_file(drive, File_id)
+                        FStatus=Upload_DataFrame(drive,Liste_a_appeler,DataBase_id,'Liste_a_appeler.csv')
+                        
+                    
             if B:
                 # Post processing messages
                 StartCompagne=datetime.now().strftime('Date %Y-%m-%d Heure %H-%M-%S')
@@ -617,7 +747,7 @@ if check_password():
                 my_bar = st.progress(0)
                 count_SMS=0
                 count_SMS_Success=0
-                prefix=('2167','2163')
+                prefix=('2167','2163','nan')
                 for icus in range(0,len(SelectedData['Phone 1'])):
                     if field !='':
                         Message_i=txt.replace(txt[Indx1:Indx2+2],SelectedData[field][icus])
