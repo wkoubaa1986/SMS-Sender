@@ -739,6 +739,7 @@ if check_password():
                 SelectedData.insert(5,'Phone2 Status',SelectedData["Phone 2"])
                 SelectedData['Phone 1']=SelectedData['Phone 1'].apply(str)
                 SelectedData['Phone 2']=SelectedData['Phone 2'].apply(str)
+                SelectedData['Envoyee']=SelectedData['Phone 2'].apply(lambda x: 'OK')
                 col1.write("C'est parti ✉...📬")
                 [Indx1,Indx2,field]=process_message(txt)
                 list_column=list(SelectedData.columns)
@@ -748,63 +749,73 @@ if check_password():
                 count_SMS=0
                 count_SMS_Success=0
                 prefix=('2167','2163','nan')
+                
                 for icus in range(0,len(SelectedData['Phone 1'])):
-                    if field !='':
-                        Message_i=txt.replace(txt[Indx1:Indx2+2],SelectedData[field][icus])
-                    else:
-                        Message_i=txt.replace(txt[Indx1:Indx2+2],field)
-                    
-                    Phone_i=SelectedData['Phone 1'][icus]
-                    Phone_i=Phone_i[0:11]
-                    if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
-                        res = sms.send_sms(message=Message_i,
-                                            dev_phone_number=dev_phone_number,
-                                            recipient_phone_number=Phone_i)
-    
-                        if res.status_code == 201:
-                            count_SMS_Success=count_SMS_Success+1
-                            now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Reussi, '+now
+                    try:
+                        if field !='':
+                            Message_i=txt.replace(txt[Indx1:Indx2+2],SelectedData[field][icus])
                         else:
-                            now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Echec, '+now
-                        SelectedData['Phone1 Status'][icus]=status
-                        count_SMS_Success=count_SMS_Success+1
-                        count_SMS=count_SMS+1
-                        time.sleep(0.3)
-                        my_bar.progress(min(count_SMS/(tel1+tel2),1.0))
-                    elif Phone_i.startswith(prefix):
-                        now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                        status='Fixe non envoye, '+now
-                        SelectedData['Phone1 Status'][icus]=status
+                            Message_i=txt.replace(txt[Indx1:Indx2+2],field)
                         
-                    
-                    Phone_i=SelectedData['Phone 2'][icus]
-                    Phone_i=Phone_i[0:11]
-                    
-                    if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
-                        res = sms.send_sms(message=Message_i,
-                                            dev_phone_number=dev_phone_number,
-                                            recipient_phone_number=Phone_i)
-    
-                        if res.status_code == 201:
+                        Phone_i=SelectedData['Phone 1'][icus]
+                        Phone_i=Phone_i[0:11]
+                        if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
+                            res = sms.send_sms(message=Message_i,
+                                                dev_phone_number=dev_phone_number,
+                                                recipient_phone_number=Phone_i)
+        
+                            if res.status_code == 201:
+                                count_SMS_Success=count_SMS_Success+1
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Reussi, '+now
+                            else:
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Echec, '+now
+                            SelectedData['Phone1 Status'][icus]=status
                             count_SMS_Success=count_SMS_Success+1
+                            count_SMS=count_SMS+1
+                            time.sleep(0.5)
+                            my_bar.progress(min(count_SMS/(tel1+tel2),1.0))
+                        elif Phone_i.startswith(prefix):
                             now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Reussi, '+now
-                        else:
+                            status='Fixe non envoye, '+now
+                            SelectedData['Phone1 Status'][icus]=status
+                            
+                        
+                        Phone_i=SelectedData['Phone 2'][icus]
+                        Phone_i=Phone_i[0:11]
+                        
+                        if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
+                            res = sms.send_sms(message=Message_i,
+                                                dev_phone_number=dev_phone_number,
+                                                recipient_phone_number=Phone_i)
+        
+                            if res.status_code == 201:
+                                count_SMS_Success=count_SMS_Success+1
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Reussi, '+now
+                            else:
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Echec, '+now
+                            SelectedData['Phone 2'][icus]=Phone_i
+                            SelectedData['Phone2 Status'][icus]=status
+                            count_SMS_Success=count_SMS_Success+1
+                            count_SMS=count_SMS+1
+                            time.sleep(0.5)
+                            my_bar.progress(min(count_SMS/(tel1+tel2),1.0))
+                        elif Phone_i.startswith(prefix):
+                            SelectedData['Phone 2'][icus]=Phone_i
                             now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Echec, '+now
-                        SelectedData['Phone 2'][icus]=Phone_i
-                        SelectedData['Phone2 Status'][icus]=status
-                        count_SMS_Success=count_SMS_Success+1
-                        count_SMS=count_SMS+1
-                        time.sleep(0.3)
-                        my_bar.progress(min(count_SMS/(tel1+tel2),1.0))
-                    elif Phone_i.startswith(prefix):
-                        SelectedData['Phone 2'][icus]=Phone_i
-                        now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                        status='Fixe non envoye, '+now
-                        SelectedData['Phone2 Status'][icus]=status
+                            status='Fixe non envoye, '+now
+                            SelectedData['Phone2 Status'][icus]=status
+                    except:
+                        errori="erreur"
+                        try:
+                            sms = utils.SMS( AUTH_TOKEN, SENDER_NAME)
+                        except:
+                            errori="connection error"
+                        SelectedData['Envoyee'][icus]=errori
+                        
                 
                 Balance=get_status_sms(AUTH_TOKEN, SENDER_NAME)
                 SelectedData['Phone 1']=SelectedData['Phone 1'].apply(str)
@@ -906,7 +917,7 @@ if check_password():
                 
                 col1.write("C'est parti ✉...📬")
                 df.insert(1,'Phone1 Status',df["Phone 1"])
-    
+                df['Envoyee']=SelectedData['Phone1 Status'].apply(lambda x: 'OK')
                 [Indx1,Indx2,field]=process_message(txt)
                 list_column=list(df.columns)    
                 if not(field in list_column):
@@ -916,35 +927,43 @@ if check_password():
                 count_SMS_Success=0
                 prefix=('2167','2163')
                 for icus in range(0,len(df['Phone 1'])):
-                    if field !='':
-                        Message_i=txt.replace(txt[Indx1:Indx2+2],df[field][icus])
-                    else:
-                        Message_i=txt.replace(txt[Indx1:Indx2+2],field)
-                    
-                    Phone_i=df['Phone 1'][icus]
-                    Phone_i=Phone_i[0:11]
-                    if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
-                        res = sms.send_sms(message=Message_i,
-                                            dev_phone_number=dev_phone_number,
-                                            recipient_phone_number=Phone_i)
-    
-                        if res.status_code == 201:
-                            count_SMS_Success=count_SMS_Success+1
-                            now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Reussi, '+now
+                    try:
+                        if field !='':
+                            Message_i=txt.replace(txt[Indx1:Indx2+2],df[field][icus])
                         else:
+                            Message_i=txt.replace(txt[Indx1:Indx2+2],field)
+                        
+                        Phone_i=df['Phone 1'][icus]
+                        Phone_i=Phone_i[0:11]
+                        if not(Phone_i.startswith(prefix)) and Phone_i!='nan':
+                            res = sms.send_sms(message=Message_i,
+                                                dev_phone_number=dev_phone_number,
+                                                recipient_phone_number=Phone_i)
+        
+                            if res.status_code == 201:
+                                count_SMS_Success=count_SMS_Success+1
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Reussi, '+now
+                            else:
+                                now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+                                status='Echec, '+now
+                                
+                            df['Phone1 Status'][icus]=status
+                            # count_SMS_Success=count_SMS_Success+1
+                            count_SMS=count_SMS+1
+                            time.sleep(0.5)
+                            my_bar.progress(min(count_SMS/(tel1),1.0))
+                        elif Phone_i.startswith(prefix):
                             now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                            status='Echec, '+now
-                            
-                        df['Phone1 Status'][icus]=status
-                        # count_SMS_Success=count_SMS_Success+1
-                        count_SMS=count_SMS+1
-                        time.sleep(0.3)
-                        my_bar.progress(min(count_SMS/(tel1),1.0))
-                    elif Phone_i.startswith(prefix):
-                        now=datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-                        status='Fixe non envoye, '+now
-                        df['Phone1 Status'][icus]=status
+                            status='Fixe non envoye, '+now
+                            df['Phone1 Status'][icus]=status
+                    except:
+                        errori="erreur"
+                        try:
+                            sms = utils.SMS( AUTH_TOKEN, SENDER_NAME)
+                        except:
+                            errori="connection error"
+                        df['Envoyee'][icus]=errori
                 
                 Balance=get_status_sms(AUTH_TOKEN, SENDER_NAME)
                 df['Phone 1']=df['Phone 1'].apply(str)
