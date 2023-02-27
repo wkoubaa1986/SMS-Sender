@@ -917,7 +917,8 @@ if check_password():
                 
                 col1.write("C'est parti ✉...📬")
                 df.insert(1,'Phone1 Status',df["Phone 1"])
-                df['Envoyee']=SelectedData['Phone1 Status'].apply(lambda x: 'OK')
+                st.write(df)
+                df['Envoyee']=df['Phone1 Status'].apply(lambda x: 'OK')
                 [Indx1,Indx2,field]=process_message(txt)
                 list_column=list(df.columns)    
                 if not(field in list_column):
