@@ -865,7 +865,9 @@ if check_password():
                 df1=pd.DataFrame()
                 if uploaded_file is not None:
                     df1 = pd.read_csv(uploaded_file,header=None)
-                    df1=df1.rename(columns={0: "Phone 1"})
+                    if len(df1.columns)>1:
+                        df1=df1.rename(columns={0: "Name"})
+                        df1=df1.rename(columns={1: "Phone 1"})
                     
             Phones_Manuel = st.text_area("Liste des telephones:","Entrer la liste des numeros separes par un ','",disabled=st.session_state.type_entree)
             if Phones_Manuel=="Entrer la liste des numeros separes par un ','":
@@ -880,6 +882,7 @@ if check_password():
             tel1=0
             if not(df.empty):
                 prefix=('2167','2163')
+                st.write(df)
                 df["Phone 1"]=df["Phone 1"].apply(lambda x: process_number(x,0))
                 df=pd.DataFrame(df["Phone 1"].unique())
                 df=df.rename(columns={0: "Phone 1"})
