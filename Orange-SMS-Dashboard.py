@@ -312,7 +312,7 @@ def select_rows_entretien(df,mois,indx_Wix):
     condition2=df.index[df['Dernier entretien']<=dayE].to_list()
     condition3=df.index[df['Dernier entretien'].isnull() & df["Date d'installation"].isnull()].tolist()
     condition4=df.index[(df['Labels'].str.contains("Client ne repond pas a nos appelles! ne plus contacter")==False)].tolist() 
-    condition5=df.index[(df['Labels'].str.contains("Client ne repond pas a nos appelles! ne plus contacter")==False)].tolist() 
+    condition5=df.index[(df['Labels'].str.contains("Pas interesse par nos services! ne plus contacter")==False)].tolist() 
     condition6=df.index[df['Labels'].str.contains("Installation") ==True ].tolist()
     condition7=df.index[df['Labels'].str.contains("Entretien")==True].tolist()
     condition8=df.index[df['Labels'].str.contains("Réparation osmoseur domestique")==True].tolist()
@@ -884,11 +884,13 @@ if check_password():
                 prefix=('2167','2163')
                 st.write(df)
                 df["Phone 1"]=df["Phone 1"].apply(lambda x: process_number(x,0))
+                st.write(df)
                 df=pd.DataFrame(df["Phone 1"].unique())
                 df=df.rename(columns={0: "Phone 1"})
                 indx=df["Phone 1"].str.startswith(prefix,na=True)
                 df=pd.DataFrame(df["Phone 1"][indx==False])
                 df=df.rename(columns={0: "Phone 1"})
+                
                 tel1=len(df["Phone 1"])
             st.header("Sommaire Compagne:: _"+title+"_ :")
             
