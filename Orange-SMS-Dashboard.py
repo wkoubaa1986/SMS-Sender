@@ -311,13 +311,14 @@ def select_rows_entretien(df,mois,indx_Wix):
     #Date entretien existe
     condition2=df.index[df['Dernier entretien']<=dayE].to_list()
     condition3=df.index[df['Dernier entretien'].isnull() & df["Date d'installation"].isnull()].tolist()
-    condition4=df.index[(df['Labels'].str.contains("Client ne repond pas a nos appelles! ne plus contacter")==False)].tolist() 
-    condition5=df.index[(df['Labels'].str.contains("Pas interesse par nos services! ne plus contacter")==False)].tolist() 
+    condition4=df.index[(df['Labels'].str.contains("Client ne repond pas a nos appelles! ne plus contacter")==True)].tolist() 
+    condition5=df.index[(df['Labels'].str.contains("Pas interesse par nos services! ne plus contacter")==True)].tolist() 
     condition6=df.index[df['Labels'].str.contains("Installation") ==True ].tolist()
     condition7=df.index[df['Labels'].str.contains("Entretien")==True].tolist()
     condition8=df.index[df['Labels'].str.contains("Réparation osmoseur domestique")==True].tolist()
-    condition3=list(set(condition3) & set(condition4) & set(condition5) & set(condition5) & set(condition6) & set(condition7) & set(condition8))
+    condition3=list(set(condition3)  & set(condition5) & set(condition6) & set(condition7) & set(condition8))
     condition=unique(condition1+condition2+condition3)
+    condition=list(set(condition) - set(condition4) -set(condition5))
     condition=list(set(condition)-set(indx_Wix))
     return condition
 def create_list(SelectedData,Ancienne_Liste):
