@@ -327,6 +327,7 @@ def create_list(SelectedData,Ancienne_Liste):
         SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
         SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)).replace(' ','').lower(), axis=1)
         SelectedData['Exist']=SelectedData['Client'].apply(lambda x: x in Client)
+        SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
         SelectedData=SelectedData[SelectedData['Exist']==False]
     else:
         SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
@@ -720,9 +721,6 @@ if check_password():
                     T=st.button("Gener liste d'appel pour entretien")
                     if T:#upload ancienne liste
                         Ancienne_Liste=load_liste(drive,folder_id)
-                        st.write(list(Ancienne_Liste.columns))
-
-                        st.write('First Name' in list(Ancienne_Liste.columns))
                         Liste_a_appeler=create_list(SelectedData,Ancienne_Liste)
                         [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
                         [File_exist,File_id]=search_file(drive,'Liste_a_appeler.csv',DataBase_id,Type_csv)
