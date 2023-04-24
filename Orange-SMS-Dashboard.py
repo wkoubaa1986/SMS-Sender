@@ -323,9 +323,9 @@ def select_rows_entretien(df,mois,indx_Wix):
     return condition
 def create_list(SelectedData,Ancienne_Liste):
     if 'First Name' in list(Ancienne_Liste.columns):
-        Client=list(Ancienne_Liste[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1))
+        Client=list(Ancienne_Liste[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)).replace(' ','').lower(), axis=1))
         SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
-        SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
+        SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)).replace(' ','').lower(), axis=1)
         SelectedData['Exist']=SelectedData['Client'].apply(lambda x: x in Client)
         SelectedData=SelectedData[SelectedData['Exist']==False]
     else:
