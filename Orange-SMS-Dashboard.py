@@ -720,6 +720,8 @@ if check_password():
                     T=st.button("Gener liste d'appel pour entretien")
                     if T:#upload ancienne liste
                         Ancienne_Liste=load_liste(drive,folder_id)
+                        st.write(list(Ancienne_Liste.columns))
+
                         st.write('First Name' in list(Ancienne_Liste.columns))
                         Liste_a_appeler=create_list(SelectedData,Ancienne_Liste)
                         [DataBase_exist,DataBase_id]=search_file(drive,'DataBase',folder_id,Type_Folder)
