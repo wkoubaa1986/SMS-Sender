@@ -335,8 +335,8 @@ def create_list(SelectedData,Ancienne_Liste):
         
     if not(SelectedData.empty):
         N_old=30
-        N_new=20
-        if len(SelectedData['Client'])>=50:
+        N_new=70
+        if len(SelectedData['Client'])>=100:
             Liste_old=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][0:N_old]
             Liste_new=SelectedData[['Client','First Name','Last Name',"Date d'installation",'Dernier entretien']][-N_new:]
             Liste=pd.concat([Liste_old,Liste_new])
