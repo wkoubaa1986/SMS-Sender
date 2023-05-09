@@ -328,6 +328,7 @@ def create_list(SelectedData,Ancienne_Liste):
         SelectedData=SelectedData.sort_values(by = 'Dernier entretien')
         st.write(Client)
         SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)).replace(' ','').replace('None','').lower(), axis=1)
+        st.write(SelectedData['Client'])
         SelectedData['Exist']=SelectedData['Client'].apply(lambda x: x in Client)
         SelectedData['Client']=SelectedData[['First Name','Last Name']].apply(lambda row: ' '.join(row.values.astype(str)), axis=1)
         SelectedData=SelectedData[SelectedData['Exist']==False]
