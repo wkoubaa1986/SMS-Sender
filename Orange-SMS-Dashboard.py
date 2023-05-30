@@ -867,7 +867,7 @@ if check_password():
                 uploaded_file = st.file_uploader("Chosissez un document",disabled=not(st.session_state.type_entree))
                 df1=pd.DataFrame()
                 if uploaded_file is not None:
-                    df1 = pd.read_csv(uploaded_file,header=None)
+                    df1 = pd.read_csv(uploaded_file)
                     if len(df1.columns)>1:
                         df1=df1.rename(columns={0: "Name"})
                         df1=df1.rename(columns={1: "Phone 1"})
@@ -885,15 +885,15 @@ if check_password():
             tel1=0
             if not(df.empty):
                 prefix=('2167','2163')
-                st.write(df)
                 df["Phone 1"]=df["Phone 1"].apply(lambda x: process_number(x,0))
                 st.write(df)
                 df=pd.DataFrame(df["Phone 1"].unique())
                 df=df.rename(columns={0: "Phone 1"})
+                df["Phone 1"]=df["Phone 1"].apply(lambda x: str(x))
                 indx=df["Phone 1"].str.startswith(prefix,na=True)
                 df=pd.DataFrame(df["Phone 1"][indx==False])
                 df=df.rename(columns={0: "Phone 1"})
-                
+                st.write(df)
                 tel1=len(df["Phone 1"])
             st.header("Sommaire Compagne:: _"+title+"_ :")
             
